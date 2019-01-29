@@ -1,21 +1,21 @@
 import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
+from sklearn.linear_model import LogisticRegression
 import warnings
 warnings.filterwarnings('ignore')
-import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(style="white")
 sns.set(style="whitegrid", color_codes=True)
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report  #for confution matrx classification report
 from sklearn.externals import joblib #This is used for save the model and load the model
-# from imblearn.over_sampling import SMOTE
+from matplotlib import pyplot as plt
 
 
 # read csv dataset for training
-dataset = pd.read_csv('E:/forth year project/final attribute table/final attribute table.csv',nrows=100000)
+dataset = pd.read_csv('E:/forth year project/final attribute table/final attribute table.csv')
 
-print(dataset)
+print(dataset.columns)
 print(dataset.shape)
 
 
@@ -26,42 +26,62 @@ else:
   print("has not null values")
 
 
-x = dataset.iloc[:, 3:9].values
-y = dataset.iloc[:, 9].values
+print(dataset.isnull().sum())
+print("")
+
+
+#######################################################################################
+
+# Class count
+count_class_0, count_class_1 = dataset.Landslide_Occurance.value_counts()
+
+# Divide by class
+dataset_class_0 = dataset[dataset['Landslide_Occurance'] == 0]
+dataset_class_1 = dataset[dataset['Landslide_Occurance'] == 1]
+
+#Random Oversampling
+dataset_class_1_over = dataset_class_1.sample(count_class_0, replace=True)
+dataset_over = pd.concat([dataset_class_0, dataset_class_1_over], axis=0)
+
+print('Random over-sampling:')
+print(dataset_over.Landslide_Occurance.value_counts())
+
+#plot oversampling values
+dataset_over.Landslide_Occurance.value_counts().plot(kind='bar', title='Count (Landslide_Occurance)');
+
+
+#######################################################################################
+
+x = dataset_over.iloc[:, 3:9].values
+y = dataset_over.iloc[:, 9].values
 
 # Split the data into Training and Testing set
 from sklearn.model_selection import train_test_split
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.34, random_state=42)
 
-print("This is X_tain  and y_train")
-print(x_train.shape)
-print(y_train.shape)
-
-
 
 # Fitting logistic regression to the training set
-from sklearn.linear_model import LogisticRegression
-
-# classifier = LogisticRegression(random_state = 0)
 classifier = LogisticRegression(penalty='l2', class_weight='balanced', C=1)
 classifier.fit(x_train, y_train)
 
 # save the model to disk
-filename = 'finalized_model.sav'
+filename = 'LogisticRegression_model.sav'
 joblib.dump(classifier, filename)
 
+#######################################################################################
 # some time later...
 
 # load the model from disk
-loaded_model = joblib.load(filename)
-result = loaded_model.score(x_test, y_test)
-print("result=")
-print(result)
+loaded_LogisticReg_model = joblib.load("C:/Users/user/PycharmProjects/testpanda5/LogisticRegression_model.sav")
+result = loaded_LogisticReg_model.score(x_test, y_test)
+print(" ")
+print("Model Accuracy result= %.2f%%" % (result * 100.0))
+print(" ")
 
+#######################################################################################
 
-
-y_predP = loaded_model.predict_proba(x_test)
+y_predP = loaded_LogisticReg_model.predict_proba(x_test)
 
 u = 0
 for w in y_predP:
@@ -75,10 +95,8 @@ for w in y_predP:
         u = u + 1
 
 # Predicting the Test set results
-y_pred = loaded_model.predict(x_test)
+y_pred = loaded_LogisticReg_model.predict(x_test)
 
-prediction = pd.DataFrame(y_predP[:, 0], columns=['predictions2']).to_csv(
-    'E:/forth year project/final attribute table/test3LogisticRegression/prediction2.csv')
 
 # Making the confusion matrix
 from sklearn.metrics import confusion_matrix
@@ -90,26 +108,43 @@ print(cm)
 report = classification_report(y_test, y_pred)
 print(report)
 
-# To Get Automatic Confusion matrix accuracy result from below technique
-from sklearn import metrics
-print("Accuracy=")
-print(metrics.accuracy_score(y_test, loaded_model.predict(x_test)))
 
-# from sklearn.metrics import recall_score
-# rs = recall_score(y_test, y_pred)
-# print(rs)
+#######################################################################################
 
 
+#roc
+from sklearn.metrics import roc_curve, auc
+fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+roc_auc = auc(fpr, tpr)
+
+#plot roc curve
+plt.figure()
+plt.plot(fpr, tpr, color='darkorange',marker='.', label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy',  linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.show()
+
+
+########################################################################
+
+
+#Load all data
 fulldataset = pd.read_csv('E:/forth year project/final attribute table/final attribute table.csv')
 Xalldata = fulldataset.iloc[:, 3:9].values
 # make a prediction
-yalldata = loaded_model.predict(Xalldata)
-yalldataproba = loaded_model.predict_proba(Xalldata)[:, 1]
+yalldata = loaded_LogisticReg_model.predict(Xalldata)
+yalldataproba = loaded_LogisticReg_model.predict_proba(Xalldata)[:, 1]
 print("Predicted=%s" % (yalldata))
 print("Predicted=%s" % (yalldataproba))
 
 
+#Save the predicted probabilities values to the csv file
 prediction = pd.DataFrame(yalldataproba, columns=['ynew_predict_probability']).to_csv(
-    'E:/forth year project/final attribute table/test3LogisticRegression/ynew_predict_probability.csv')
+    'E:/forth year project/final attribute table/LogisticRegressionAlgo/predict_probability_LogisticReg.csv')
 
 
