@@ -60,6 +60,17 @@ y = dataset_over.iloc[:, 9].values
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.34, random_state=1)
 
 
+
+# Applying PCA
+# from sklearn.decomposition import PCA
+# pca = PCA(n_components=6 , svd_solver='full')
+# pca.fit(X_train)
+# pca.fit(X_test)
+# PCA(copy=True, iterated_power='auto', n_components=6, random_state=None,
+#     svd_solver='full', tol=0.0, whiten=False)
+# print(pca.explained_variance_ratio_)
+
+
 # Feature Scaling
 from sklearn.preprocessing import StandardScaler
 # sc = StandardScaler()

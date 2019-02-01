@@ -9,6 +9,7 @@ from sklearn.externals import joblib #This is used for save the model and load t
 from matplotlib import pyplot as plt
 import seaborn as sns
 
+
 # read csv dataset for training
 dataset = pd.read_csv('E:/forth year project/final attribute table/final attribute table.csv')
 
@@ -69,6 +70,7 @@ pca = PCA(n_components =1)
 X_train = pca.fit_transform(X_train)
 X_test = pca.transform(X_test)
 explained_variance = pca.explained_variance_ratio_.cumsum()
+print(pca.explained_variance_ratio_)
 
 #######################################################################################
 
